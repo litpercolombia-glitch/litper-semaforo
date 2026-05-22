@@ -170,8 +170,19 @@ body{background:var(--bg);color:var(--t1);font-family:var(--sans);min-height:100
 .secure-icons{display:flex;align-items:center;gap:16px;flex-wrap:wrap;justify-content:center;margin-top:14px;opacity:.5}
 .secure-icons span{font-size:10px;font-family:var(--mono);color:var(--t3);display:flex;align-items:center;gap:4px}
 </style>
-</head>
+
+<style id="matrix-rain-style">
+#matrix-canvas {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  pointer-events: none;
+  z-index: 0;
+}
+</style></head>
 <body>
+<canvas id="matrix-canvas"></canvas>
+
 
 <!-- TOP BAR -->
 <div class="topbar">
@@ -772,5 +783,53 @@ setInterval(showActivity, 55000);
 updatePrices();
 updateSidebar();
 </script>
-</body>
+
+<script id="matrix-rain-script">
+(function(){
+  var c = document.getElementById('matrix-canvas');
+  if(!c) return;
+  var ctx = c.getContext('2d');
+  var HEX = '0123456789ABCDEF';
+  var fs = 14, cols, drops, raf, paused = false, lastT = 0;
+  var INTERVAL = 40; // ~25fps
+
+  function resize() {
+    c.width  = window.innerWidth;
+    c.height = window.innerHeight;
+    cols  = Math.floor(c.width / fs);
+    drops = Array.from({length: cols}, function() { return Math.random() * -50 | 0; });
+  }
+
+  function draw(ts) {
+    if(!paused) {
+      if(ts - lastT >= INTERVAL) {
+        lastT = ts;
+        ctx.fillStyle = 'rgba(7,8,10,0.08)';
+        ctx.fillRect(0,0,c.width,c.height);
+        ctx.font = fs + 'px JetBrains Mono, monospace';
+        for(var i=0;i<drops.length;i++) {
+          var ch = HEX[Math.random()*16|0];
+          // head char brighter, tail dims naturally
+          var bright = drops[i] >= 0 && drops[i]*fs < c.height;
+          if(bright) {
+            ctx.fillStyle = 'rgba(0,255,136,0.5)';
+            ctx.fillText(ch, i*fs, drops[i]*fs);
+          }
+          if(drops[i]*fs > c.height && Math.random() > 0.975) drops[i] = 0;
+          drops[i]++;
+        }
+      }
+    }
+    raf = requestAnimationFrame(draw);
+  }
+
+  document.addEventListener('visibilitychange', function() {
+    paused = document.hidden;
+    if(!paused) lastT = 0;
+  });
+  window.addEventListener('resize', resize);
+  resize();
+  raf = requestAnimationFrame(draw);
+})();
+</script></body>
 </html>
