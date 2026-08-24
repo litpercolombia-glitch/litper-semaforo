@@ -1,0 +1,342 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Semáforo N1 · Litper</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#07080A; --surface:#0E1013; --line:#1C2026; --line-hi:#2A3038;
+  --txt:#F2F4F7; --txt-dim:#98A1AE; --txt-mute:#646D79;
+  --accent:#00E08A; --accent-soft:rgba(0,224,138,.10);
+  --verde:#00E08A; --amarillo:#F5B23D; --rojo:#FF4D5E;
+  --d1:120ms; --d2:200ms; --d3:340ms; --ease:cubic-bezier(.22,.8,.28,1);
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{
+  background:var(--bg); color:var(--txt);
+  font-family:'IBM Plex Sans',system-ui,sans-serif;
+  font-size:15px; line-height:1.55; -webkit-font-smoothing:antialiased;
+  letter-spacing:-0.011em;
+}
+.mono{font-family:'IBM Plex Mono',ui-monospace,monospace}
+
+/* ---------- shell ---------- */
+.shell{max-width:1180px;margin:0 auto;padding:40px 28px 80px}
+header{display:flex;align-items:baseline;gap:16px;flex-wrap:wrap;margin-bottom:8px}
+h1{font-size:26px;font-weight:700;letter-spacing:-0.03em;margin:0}
+.tag{font-size:11px;font-weight:600;letter-spacing:.10em;text-transform:uppercase;
+  color:var(--accent);background:var(--accent-soft);border:1px solid rgba(0,224,138,.22);
+  padding:4px 9px;border-radius:4px}
+.sub{color:var(--txt-dim);font-size:14px;margin:0 0 40px}
+.sub b{color:var(--txt);font-weight:600}
+
+/* ---------- gate ---------- */
+#gate{max-width:380px;margin:14vh auto;padding:0 28px}
+#gate p{color:var(--txt-dim);font-size:14px;margin:0 0 22px}
+label{display:block;font-size:11px;font-weight:600;letter-spacing:.10em;
+  text-transform:uppercase;color:var(--txt-mute);margin-bottom:8px}
+input[type=password],input[type=text]{
+  width:100%;background:var(--surface);border:1px solid var(--line);color:var(--txt);
+  padding:12px 14px;border-radius:6px;font-family:'IBM Plex Mono',monospace;font-size:14px;
+  transition:border-color var(--d2) var(--ease),box-shadow var(--d2) var(--ease)}
+input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+input.ok{border-color:var(--accent)}
+
+/* ---------- botones ---------- */
+button{
+  font-family:inherit;font-size:13px;font-weight:600;letter-spacing:-0.005em;
+  background:var(--surface);color:var(--txt);border:1px solid var(--line-hi);
+  padding:9px 15px;border-radius:6px;cursor:pointer;
+  transition:transform var(--d1) var(--ease),background var(--d2) var(--ease),
+             border-color var(--d2) var(--ease),opacity var(--d2) var(--ease)}
+button:hover{background:#151A20;border-color:#3A424D;transform:translateY(-1px)}
+button:active{transform:translateY(0) scale(.985)}
+button:disabled{opacity:.42;cursor:not-allowed;transform:none}
+button.primary{background:var(--accent);color:#04120C;border-color:var(--accent)}
+button.primary:hover{background:#22F0A0;border-color:#22F0A0}
+button.danger{color:var(--rojo);border-color:rgba(255,77,94,.35)}
+button.danger:hover{background:rgba(255,77,94,.08);border-color:var(--rojo)}
+button.wide{width:100%;padding:12px}
+
+/* ---------- layout ---------- */
+.grid{display:grid;grid-template-columns:1.35fr .9fr;gap:34px;align-items:start}
+@media(max-width:900px){.grid{grid-template-columns:1fr;gap:26px}.shell{padding:26px 18px 60px}}
+section{background:var(--surface);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.sec-head{display:flex;justify-content:space-between;align-items:center;gap:12px;
+  padding:15px 20px;border-bottom:1px solid var(--line)}
+.sec-head h2{margin:0;font-size:12px;font-weight:600;letter-spacing:.10em;
+  text-transform:uppercase;color:var(--txt-mute)}
+.sec-body{padding:20px}
+.sec-body.tight{padding:10px 8px}
+
+/* ---------- consola ---------- */
+#log{height:400px;overflow-y:auto;padding:16px 20px;font-family:'IBM Plex Mono',monospace;
+  font-size:12.5px;line-height:1.65}
+#log::-webkit-scrollbar{width:8px}
+#log::-webkit-scrollbar-thumb{background:var(--line-hi);border-radius:4px}
+.line{margin-bottom:12px;animation:in var(--d3) var(--ease)}
+@keyframes in{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
+.line .who{color:var(--txt-mute);font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;
+  display:block;margin-bottom:3px}
+.line.me .who{color:var(--accent)}
+.line pre{margin:0;white-space:pre-wrap;word-break:break-word;color:var(--txt-dim)}
+.line.me pre{color:var(--txt)}
+.line.err pre{color:var(--rojo)}
+.bar{display:flex;gap:8px;padding:14px 20px;border-top:1px solid var(--line)}
+.bar input{flex:1}
+.chips{display:flex;flex-wrap:wrap;gap:7px;padding:0 20px 16px}
+.chip{font-family:'IBM Plex Mono',monospace;font-size:11.5px;font-weight:500;padding:5px 10px;
+  color:var(--txt-dim)}
+
+/* ---------- tablas / filas ---------- */
+.row{display:flex;justify-content:space-between;align-items:center;gap:14px;
+  padding:11px 12px;border-radius:6px;transition:background var(--d2) var(--ease)}
+.row:hover{background:#12161B}
+.row+.row{border-top:1px solid var(--line)}
+.row .name{font-weight:600;font-size:13.5px}
+.row .meta{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--txt-mute);margin-top:2px}
+.dot{width:8px;height:8px;border-radius:50%;flex:none}
+.left{display:flex;align-items:center;gap:11px;min-width:0}
+.left>div{min-width:0}
+.v{background:var(--verde)}.a{background:var(--amarillo)}.r{background:var(--rojo)}
+.rate{font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600}
+.empty{color:var(--txt-mute);font-size:13px;padding:14px 12px}
+
+/* ---------- pendientes T2/T3 ---------- */
+.pend{border:1px solid rgba(255,77,94,.30);background:rgba(255,77,94,.05);
+  border-radius:8px;padding:14px;margin-bottom:12px}
+.pend .t{font-weight:700;font-size:14px;margin-bottom:2px}
+.pend .m{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--txt-dim);margin-bottom:12px}
+.pend .acts{display:flex;gap:8px}
+.tier{font-size:10px;font-weight:700;letter-spacing:.08em;padding:2px 6px;border-radius:3px;
+  border:1px solid var(--line-hi);color:var(--txt-mute);margin-left:8px}
+
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--line)}
+.kpi{background:var(--surface);padding:16px 14px}
+.kpi .n{font-family:'IBM Plex Mono',monospace;font-size:23px;font-weight:600;letter-spacing:-0.02em}
+.kpi .l{font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--txt-mute);margin-top:3px}
+footer{margin-top:40px;color:var(--txt-mute);font-size:11.5px;font-family:'IBM Plex Mono',monospace}
+.hidden{display:none}
+</style>
+</head>
+<body>
+
+<div id="gate">
+  <h1>Semáforo N1</h1>
+  <p>Consola de operación. Fuente de verdad: Dropi.</p>
+  <label for="pw">Clave de acceso</label>
+  <input id="pw" type="password" autocomplete="current-password" placeholder="••••••••••">
+  <div style="height:14px"></div>
+  <button class="primary wide" id="enter">Entrar</button>
+  <div style="height:12px"></div>
+  <div id="gate-err" class="mono" style="color:var(--rojo);font-size:12px;min-height:16px"></div>
+</div>
+
+<div class="shell hidden" id="app">
+  <header>
+    <h1>Semáforo N1</h1>
+    <span class="tag">Agente activo</span>
+  </header>
+  <p class="sub">Salud de entrega por <b>ciudad × transportadora</b>. Fuente de verdad única: <b>Dropi</b> (tabla <span class="mono">guias</span>) — no usa atribución de Meta.</p>
+
+  <div class="kpis" id="kpis"></div>
+  <div style="height:34px"></div>
+
+  <div class="grid">
+    <section>
+      <div class="sec-head">
+        <h2>Consola</h2>
+        <button id="btn-run">Correr ciclo</button>
+      </div>
+      <div id="log"></div>
+      <div class="chips">
+        <button class="chip" data-cmd="estado">estado</button>
+        <button class="chip" data-cmd="evaluar 30">evaluar 30</button>
+        <button class="chip" data-cmd="ejecutar 30">ejecutar 30</button>
+        <button class="chip" data-cmd="medir 72">medir 72</button>
+        <button class="chip" data-cmd="ayuda">ayuda</button>
+      </div>
+      <div class="bar">
+        <input id="cmd" type="text" class="mono" placeholder="ejecutar 30" autocomplete="off">
+        <button class="primary" id="send">Enviar</button>
+      </div>
+    </section>
+
+    <div>
+      <section style="margin-bottom:26px">
+        <div class="sec-head"><h2>Requiere aprobación</h2></div>
+        <div class="sec-body tight" id="pend"><div class="empty">Cargando…</div></div>
+      </section>
+      <section>
+        <div class="sec-head"><h2>Estado actual</h2></div>
+        <div class="sec-body tight" id="estado"><div class="empty">Cargando…</div></div>
+      </section>
+    </div>
+  </div>
+
+  <footer>ZYNEX SEMÁFORO N1 · escribe en semaforo_estado · guias.metadata · llao_decisions · loop_events · marcus_outcomes · loop_rules · alertas</footer>
+</div>
+
+<script>
+let PASS = '';
+const $ = (s) => document.querySelector(s);
+
+async function api(payload){
+  const r = await fetch('/api/semaforo', {
+    method:'POST',
+    headers:{'Content-Type':'application/json','x-pass':PASS},
+    body: JSON.stringify(payload)
+  });
+  const j = await r.json().catch(()=>({error:'respuesta no-JSON'}));
+  if(!r.ok) throw new Error(j.error || ('HTTP '+r.status));
+  return j;
+}
+
+function say(who, text, cls){
+  const d = document.createElement('div');
+  d.className = 'line ' + (cls||'');
+  d.innerHTML = '<span class="who"></span><pre></pre>';
+  d.querySelector('.who').textContent = who;
+  d.querySelector('pre').textContent = text;
+  $('#log').appendChild(d);
+  $('#log').scrollTop = $('#log').scrollHeight;
+}
+const fmt = (o) => JSON.stringify(o, null, 2);
+const pct = (v) => v==null ? '—' : (Math.round(v*1000)/10).toFixed(1)+'%';
+const cls = (c) => c==='rojo'?'r':c==='amarillo'?'a':'v';
+
+// ---------- login ----------
+$('#enter').onclick = async () => {
+  PASS = $('#pw').value.trim();
+  $('#gate-err').textContent = '';
+  $('#enter').disabled = true; $('#enter').textContent = 'Verificando…';
+  try{
+    await api({action:'estado'});
+    sessionStorage.setItem('smf_pass', PASS);
+    $('#gate').classList.add('hidden');
+    $('#app').classList.remove('hidden');
+    say('semáforo n1','Consola lista. Fuente de verdad: Dropi (tabla guias).\nEscribí "ayuda" para ver los comandos.');
+    refresh();
+  }catch(e){
+    $('#gate-err').textContent = e.message;
+  }finally{
+    $('#enter').disabled = false; $('#enter').textContent = 'Entrar';
+  }
+};
+$('#pw').addEventListener('keydown', e => { if(e.key==='Enter') $('#enter').click(); });
+$('#pw').addEventListener('input', e => e.target.classList.toggle('ok', e.target.value.length>3));
+
+// ---------- panel ----------
+async function refresh(){
+  try{
+    const d = await api({action:'estado'});
+    const est = d.estado||[], pend = d.pendientes||[], run = d.ultimo_run;
+    const n = c => est.filter(e=>e.color===c).length;
+
+    $('#kpis').innerHTML =
+      kpi(n('verde'),'Verde','var(--verde)') +
+      kpi(n('amarillo'),'Amarillo','var(--amarillo)') +
+      kpi(n('rojo'),'Rojo','var(--rojo)') +
+      kpi(pend.length,'Por aprobar','var(--txt)');
+
+    $('#pend').innerHTML = pend.length ? pend.map(p => `
+      <div class="pend">
+        <div class="t">${esc(p.target_entity_name)}<span class="tier">TIER ${p.tier}</span></div>
+        <div class="m">${esc((p.context&&p.context.motivo)||'')}</div>
+        <div class="acts">
+          <button class="primary" data-ap="${p.id}">Aprobar</button>
+          <button class="danger" data-rj="${p.id}">Rechazar</button>
+        </div>
+      </div>`).join('') : '<div class="empty">Nada pendiente. El agente no necesita al CEO ahora.</div>';
+
+    $('#estado').innerHTML = est.length ? est.map(e => `
+      <div class="row">
+        <div class="left">
+          <span class="dot ${cls(e.color)}"></span>
+          <div>
+            <div class="name">${esc(e.ciudad)} <span style="color:var(--txt-mute);font-weight:400">/ ${esc(e.transportadora)}</span></div>
+            <div class="meta">${e.pedidos_ventana||0} pedidos · ${e.ventana_dias||0}d${e.bloqueado?' · BLOQUEADO':''}</div>
+          </div>
+        </div>
+        <span class="rate" style="color:var(--${e.color})">${pct(e.tasa_entrega)}</span>
+      </div>`).join('') : '<div class="empty">Sin estado. Corré un ciclo.</div>';
+
+    document.querySelectorAll('[data-ap]').forEach(b => b.onclick = () => decidir(b.dataset.ap, true));
+    document.querySelectorAll('[data-rj]').forEach(b => b.onclick = () => decidir(b.dataset.rj, false));
+
+    if(run) say('semáforo n1', `Último ciclo: ${run.candidatos||0} candidatos · T1 auto ${run.t1_ejecutadas||0} · T2 ${run.t2_pendientes||0} · T3 ${run.t3_pendientes||0} · outcomes ${run.outcomes_medidos||0}`);
+  }catch(e){ say('error', e.message, 'err'); }
+}
+const kpi = (n,l,c) => `<div class="kpi"><div class="n" style="color:${c}">${n}</div><div class="l">${l}</div></div>`;
+const esc = (s) => String(s==null?'':s).replace(/[<>&]/g, m => ({'<':'&lt;','>':'&gt;','&':'&amp;'}[m]));
+
+async function decidir(id, aprobado){
+  const motivo = aprobado ? 'aprobado desde consola CEO' : (prompt('Motivo del rechazo:') || 'sin motivo');
+  say('ceo', (aprobado?'aprobar ':'rechazar ')+id, 'me');
+  try{
+    const r = await api({action:'aprobar', decision_id:id, aprobado, motivo});
+    say('semáforo n1', fmt(r.resultado));
+    refresh();
+  }catch(e){ say('error', e.message, 'err'); }
+}
+
+// ---------- comandos ----------
+const AYUDA = [
+  'COMANDOS',
+  '  estado                      — panel actual (solo lectura)',
+  '  evaluar [dias]              — dry-run: qué haría, sin escribir nada',
+  '  ejecutar [dias]             — corre el ciclo: T1 se aplica solo, T2/T3 quedan pendientes',
+  '  medir [horas]               — loop de aprendizaje: outcomes + recalibra loop_rules',
+  '  aprobar <decision_id>       — ejecuta una decisión T2/T3',
+  '  rechazar <decision_id> <motivo>',
+  '  marcar <CIUDAD>|<CARRIER>|<color>  — marcado manual (tier 2)',
+].join('\n');
+
+async function run(raw){
+  const t = raw.trim(); if(!t) return;
+  say('ceo', t, 'me');
+  const [c, ...rest] = t.split(/\s+/);
+  const cmd = c.toLowerCase();
+  try{
+    if(cmd==='ayuda'){ return say('semáforo n1', AYUDA); }
+    if(cmd==='estado'){ const d = await api({action:'estado'});
+      say('semáforo n1', `fuente: ${d.fuente}\nestados: ${d.estado.length} · pendientes: ${d.pendientes.length}`); return refresh(); }
+    if(cmd==='evaluar'){ const d = await api({action:'evaluar', dias:+rest[0]||null});
+      const c2 = d.candidatos||[];
+      return say('semáforo n1', `DRY-RUN — no escribí nada.\n${c2.length} candidatos:\n` +
+        c2.slice(0,20).map(x=>`  ${x.color.toUpperCase().padEnd(8)} ${x.ciudad}/${x.transportadora} ${pct(x.tasa_entrega)} (${x.pedidos}p) T${x.tier}`).join('\n')); }
+    if(cmd==='ejecutar'){ const d = await api({action:'ejecutar', dias:+rest[0]||null});
+      say('semáforo n1', fmt(d.resultado)); return refresh(); }
+    if(cmd==='medir'){ const d = await api({action:'medir', horas:+rest[0]||72});
+      say('semáforo n1', fmt(d.resultado)); return refresh(); }
+    if(cmd==='aprobar'){ return decidir(rest[0], true); }
+    if(cmd==='rechazar'){ const id=rest[0];
+      const r = await api({action:'aprobar', decision_id:id, aprobado:false, motivo:rest.slice(1).join(' ')||'sin motivo'});
+      say('semáforo n1', fmt(r.resultado)); return refresh(); }
+    if(cmd==='marcar'){ const [ciudad,transportadora,color] = rest.join(' ').split('|').map(s=>s.trim());
+      const r = await api({action:'marcar', ciudad, transportadora, color, tier:2, motivo:'marcado manual CEO'});
+      say('semáforo n1', fmt(r.resultado)); return refresh(); }
+    say('semáforo n1', 'No conozco ese comando. Escribí "ayuda".');
+  }catch(e){ say('error', e.message, 'err'); }
+}
+
+$('#send').onclick = () => { const v = $('#cmd').value; $('#cmd').value=''; run(v); };
+$('#cmd').addEventListener('keydown', e => { if(e.key==='Enter') $('#send').click(); });
+document.querySelectorAll('.chip').forEach(b => b.onclick = () => run(b.dataset.cmd));
+$('#btn-run').onclick = async () => {
+  const b = $('#btn-run'); b.disabled = true; b.textContent = 'Corriendo…';
+  await run('ejecutar'); await run('medir 72');
+  b.disabled = false; b.textContent = 'Correr ciclo';
+};
+
+const saved = sessionStorage.getItem('smf_pass');
+if(saved){ $('#pw').value = saved; $('#enter').click(); }
+</script>
+</body>
+</html>
