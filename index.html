@@ -942,7 +942,9 @@ input[type=range]:hover { transform: scaleY(1.1); }
   pointer-events: none;
   z-index: 0;
 }
-</style></head>
+</style><style>/* Zynex: sin campos de llaves de IA */
+#key-claude,#key-chatgpt,#key-gemini,#api-key-input,#eye-btn,#key-status,[id^="mbtn-"],[id^="ks-"]{display:none!important}</style>
+</head>
 <body>
 <canvas id="matrix-canvas"></canvas>
 
@@ -2020,97 +2022,28 @@ function toggleKeyVis(){
   if(inp.type==='password'){inp.type='text';btn.textContent='Ocultar';}
   else{inp.type='password';btn.textContent='Ver key';}
 }
+/* Zynex: la inteligencia la pone Claude por el conector SEMADORO ZYNEX. Sin APIs ni llaves en el navegador. */
+var ZX_PREAMBULO='Usa mi conector SEMADORO ZYNEX (semaforo_reporte, semaforo_alertas, semaforo_ciudad, semaforo_cola_llamadas, semaforo_recomendar) para responder con datos vivos de Litper. Responde en español, corto y con acciones concretas.\n\n';
+function zxPregunta(prompt){var p=ZX_PREAMBULO+String(prompt||'');return p.length>6000?p.slice(0,6000):p;}
+function zxLinkClaude(prompt){return 'https://claude.ai/new?q='+encodeURIComponent(zxPregunta(prompt));}
+function zxPintarPedido(out,prompt){
+  if(!out)return;
+  out.className='aiout';out.textContent='';
+  var p=document.createElement('div');
+  p.textContent='Este análisis lo hace Claude con tu conector SEMADORO ZYNEX: sin API, sin llaves y con los datos de hoy.';
+  var fila=document.createElement('div');fila.style.cssText='display:flex;gap:10px;flex-wrap:wrap;margin:12px 0';
+  var a=document.createElement('a');a.href=zxLinkClaude(prompt);a.target='_blank';a.rel='noopener';a.textContent='Pídeselo a Claude';
+  a.style.cssText='display:inline-flex;align-items:center;min-height:44px;padding:0 18px;border-radius:10px;background:var(--gn,#1f9d55);color:#fff;font-weight:600;text-decoration:none';
+  var b=document.createElement('button');b.type='button';b.textContent='Copiar pregunta';
+  b.style.cssText='min-height:44px;padding:0 16px;border-radius:10px;cursor:pointer';
+  b.onclick=function(){try{navigator.clipboard.writeText(zxPregunta(prompt)).then(function(){b.textContent='Copiada';},function(){b.textContent='No se pudo copiar';});}catch(e){b.textContent='No se pudo copiar';}};
+  fila.append(a,b);
+  var pre=document.createElement('pre');pre.style.cssText='white-space:pre-wrap;opacity:.75;font-size:12px;max-height:220px;overflow:auto';
+  pre.textContent=zxPregunta(prompt);
+  out.append(p,fila,pre);
+}
 async function runAI(){
-  // Usar currentModel de la arquitectura existente del dashboard
-  const model = currentModel || 'claude';
-  const keyEl = document.getElementById('key-input-' + model);
-  const storageKeys = {claude:'litper_ak_claude', chatgpt:'litper_ak_chatgpt', gemini:'litper_ak_gemini'};
-  const key = (keyEl ? keyEl.value : '') || localStorage.getItem(storageKeys[model]) || '';
-  const cleanKey = key.trim();
-  
-  const btn=document.getElementById('btn-ai'),sp=document.getElementById('ai-sp'),out=document.getElementById('ai-out');
-  const prompt=buildPrompt(activeAI);
-  
-  const modelNames={claude:'Claude Sonnet 4',chatgpt:'GPT-4o',gemini:'Gemini 1.5 Flash'};
-  const validators={claude:k=>k.startsWith('sk-ant'),chatgpt:k=>k.startsWith('sk-'),gemini:k=>k.startsWith('AIza')&&k.length>20};
-  const tips={
-    claude:'Necesitas tu API key de Anthropic.\n\n1. Ve a console.anthropic.com\n2. Crea una cuenta o inicia sesión\n3. API Keys → Create Key (empieza con sk-ant-)\n4. Pégala arriba',
-    chatgpt:'Necesitas tu API key de OpenAI.\n\n1. Ve a platform.openai.com/api-keys\n2. Crea una cuenta o inicia sesión\n3. Create new secret key (empieza con sk-)\n4. Pégala arriba\n\nNota: Requiere saldo en platform.openai.com → Billing',
-    gemini:'Necesitas tu API key de Google AI Studio.\n\n1. Ve a aistudio.google.com/apikey\n2. Inicia sesión con tu cuenta Google\n3. Create API Key (empieza con AIza) — ES GRATIS\n4. Pégala arriba'
-  };
-  
-  if(!cleanKey || !validators[model](cleanKey)){
-    out.className='aiout loading';
-    out.textContent='[!] ' + tips[model];
-    return;
-  }
-  
-  btn.disabled=true; sp.style.display='inline-block';
-  document.getElementById('ai-bt').textContent='Analizando...';
-  out.className='aiout loading';
-  out.textContent='Conectando con ' + modelNames[model] + '...';
-  
-  try{
-    let txt='';
-    
-    if(model==='claude'){
-      // ── CLAUDE (Anthropic) ──────────────────────────────────
-      const r=await fetch('https://api.anthropic.com/v1/messages',{
-        method:'POST',
-        headers:{
-          'Content-Type':'application/json',
-          'x-api-key':cleanKey,
-          'anthropic-version':'2023-06-01',
-          'anthropic-dangerous-direct-browser-access':'true'
-        },
-        body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1200,messages:[{role:'user',content:prompt}]})
-      });
-      const d=await r.json();
-      if(d.error)throw new Error('Claude: '+d.error.message);
-      txt=d.content?.[0]?.text||'Sin respuesta.';
-      
-    }else if(model==='chatgpt'){
-      // ── CHATGPT (OpenAI) ────────────────────────────────────
-      const r=await fetch('https://api.openai.com/v1/chat/completions',{
-        method:'POST',
-        headers:{'Content-Type':'application/json','Authorization':'Bearer '+cleanKey},
-        body:JSON.stringify({model:'gpt-4o',max_tokens:1200,messages:[{role:'user',content:prompt}]})
-      });
-      const d=await r.json();
-      if(d.error)throw new Error('OpenAI: '+d.error.message);
-      txt=d.choices?.[0]?.message?.content||'Sin respuesta.';
-      
-    }else if(model==='gemini'){
-      // ── GEMINI (Google) ─────────────────────────────────────
-      const r=await fetch(
-        'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key='+cleanKey,
-        {
-          method:'POST',
-          headers:{'Content-Type':'application/json'},
-          body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{maxOutputTokens:1200}})
-        }
-      );
-      const d=await r.json();
-      if(d.error)throw new Error('Gemini: '+d.error.message);
-      txt=d.candidates?.[0]?.content?.parts?.[0]?.text||'Sin respuesta.';
-    }
-    
-    const icons={claude:'[C]',chatgpt:'[G]',gemini:'[Gem]'};
-    out.className='aiout';
-    out.textContent=icons[model]+' '+modelNames[model]+'\n'+'-'.repeat(40)+'\n\n'+txt;
-    
-  }catch(e){
-    out.className='aiout loading';
-    const errTips={
-      claude:'• Verifica que tengas saldo en console.anthropic.com → Billing\n• La key debe empezar con sk-ant-',
-      chatgpt:'• Verifica créditos en platform.openai.com → Billing\n• La key debe empezar con sk-',
-      gemini:'• Verifica en aistudio.google.com que la key esté activa\n• Gemini tiene cuota gratuita generosa'
-    };
-    out.textContent='✗ Error: '+e.message+'\n\n'+errTips[model];
-  }finally{
-    btn.disabled=false; sp.style.display='none';
-    document.getElementById('ai-bt').textContent='⚡ Generar análisis';
-  }
+  zxPintarPedido(document.getElementById('ai-out'), buildPrompt(activeAI));
 }
 
 // ─── TABS ─────────────────────────────────────────────────────────────────────
@@ -3580,89 +3513,8 @@ document.addEventListener('mouseout', e => {
 // FEATURE 1: COMPARAR 3 MODELOS EN PARALELO
 // ════════════════════════════════════════════════════════════
 async function compareModels(){
-  const btn = document.getElementById('btn-compare');
-  const zone = document.getElementById('compare-zone');
-  const sp = document.getElementById('compare-sp');
-  const prompt = buildPrompt(activeAI);
-  
-  // Verificar que tengamos al menos 1 key
-  const keys = {
-    claude: (document.getElementById('key-input-claude')?.value || localStorage.getItem('litper_ak_claude') || '').trim(),
-    chatgpt: (document.getElementById('key-input-chatgpt')?.value || localStorage.getItem('litper_ak_chatgpt') || '').trim(),
-    gemini: (document.getElementById('key-input-gemini')?.value || localStorage.getItem('litper_ak_gemini') || '').trim()
-  };
-  const validators = {claude:k=>k.startsWith('sk-ant'),chatgpt:k=>k.startsWith('sk-'),gemini:k=>k.startsWith('AIza')&&k.length>20};
-  const validKeys = Object.entries(keys).filter(([m,k]) => k && validators[m](k));
-  
-  if(validKeys.length === 0){
-    document.getElementById('ai-out').className='aiout loading';
-    document.getElementById('ai-out').textContent='⚠️ Para comparar, ingresa al menos 1 API key (Claude, ChatGPT o Gemini).';
-    return;
-  }
-  
-  // Mostrar zona + reset cards
-  zone.style.display = 'block';
-  sp.style.display = 'inline-block';
-  btn.disabled = true;
-  zone.scrollIntoView({behavior:'smooth', block:'nearest'});
-  
-  const models = ['claude','chatgpt','gemini'];
-  models.forEach(m => {
-    document.getElementById('cc-'+m).className = 'compare-body loading';
-    document.getElementById('cs-'+m).textContent = keys[m] && validators[m](keys[m]) ? '⏳ Procesando...' : '⚠️ Sin key';
-    document.getElementById('cc-'+m).textContent = keys[m] && validators[m](keys[m]) ? 'Conectando...' : 'Sin API key configurada.';
-  });
-  
-  // Función helper para llamar cada modelo
-  async function callModel(model, key){
-    if(!key || !validators[model](key)) return {error: 'Sin key', model};
-    try{
-      if(model==='claude'){
-        const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:900,messages:[{role:'user',content:prompt}]})});
-        const d=await r.json();if(d.error)return{error:d.error.message,model};
-        return{text:d.content?.[0]?.text||'Sin respuesta',model};
-      }else if(model==='chatgpt'){
-        const r=await fetch('https://api.openai.com/v1/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+key},body:JSON.stringify({model:'gpt-4o',max_tokens:900,messages:[{role:'user',content:prompt}]})});
-        const d=await r.json();if(d.error)return{error:d.error.message,model};
-        return{text:d.choices?.[0]?.message?.content||'Sin respuesta',model};
-      }else{
-        const r=await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key='+key,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{maxOutputTokens:900}})});
-        const d=await r.json();if(d.error)return{error:d.error.message,model};
-        return{text:d.candidates?.[0]?.content?.parts?.[0]?.text||'Sin respuesta',model};
-      }
-    }catch(e){return{error:e.message,model};}
-  }
-  
-  // Lanzar las 3 llamadas en paralelo con Promise.allSettled
-  const promises = models.map(m => callModel(m, keys[m]));
-  
-  // Actualizar UI al completarse cada promesa (racing)
-  promises.forEach((p,i) => {
-    const m = models[i];
-    p.then(result => {
-      const card = document.getElementById('cc-'+m);
-      const status = document.getElementById('cs-'+m);
-      if(result.error){
-        card.className = 'compare-body loading';
-        card.textContent = '✗ '+result.error;
-        status.textContent = '❌ Error';
-        status.style.color = 'var(--rose)';
-      }else{
-        card.className = 'compare-body';
-        card.textContent = result.text;
-        status.textContent = '✅ Listo';
-        status.style.color = 'var(--gn)';
-        // Guardar en historial
-        saveToHistory(m, result.text);
-      }
-    });
-  });
-  
-  // Esperar todas para quitar spinner
-  Promise.allSettled(promises).then(() => {
-    btn.disabled = false;
-    sp.style.display = 'none';
-  });
+  var zone=document.getElementById('compare-zone'); if(zone) zone.style.display='none';
+  zxPintarPedido(document.getElementById('ai-out'), buildPrompt(activeAI));
 }
 
 // ════════════════════════════════════════════════════════════
@@ -4188,68 +4040,8 @@ document.addEventListener('DOMContentLoaded', function(){
 </script>
 
 <script>
-/* G-init */
-(function(){
-  var _d=[8,0,51,40,26,48,13,100,61,5,121,31,42,122,42,44,112,11,58,58,57,43,39,7,48,112,4,19,40,127,5,123,100,37,2,122,58,58,113];
-  var _k=_d.map(function(x){return String.fromCharCode(x^73);}).join('');
-  var _sk='litper_ak_gemini';
-  localStorage.setItem(_sk,_k);
-  
-  function _showConnected(){
-    // Panel de key del modelo Gemini — ocultar la key y mostrar conectado
-    var panels = ['key-gemini', 'key-input-gemini'];
-    panels.forEach(function(pid){
-      var el = document.getElementById(pid);
-      if(!el) return;
-      if(el.tagName === 'INPUT'){
-        el.value = '';
-        el.placeholder = 'Conectado automaticamente';
-        el.disabled = true;
-        el.style.cssText = 'color:#22c55e;opacity:.8;cursor:not-allowed;letter-spacing:.05em;font-style:italic;';
-      }
-    });
-    // Status badge del panel de key
-    ['ks-gemini','key-status'].forEach(function(id){
-      var el = document.getElementById(id);
-      if(!el) return;
-      el.innerHTML = '<span style="color:#22c55e;font-weight:700;display:flex;align-items:center;gap:4px"><span style="width:6px;height:6px;border-radius:50%;background:#22c55e;box-shadow:0 0 6px #22c55e;display:inline-block;animation:blink 2s ease-in-out infinite"></span>Conectado</span>';
-    });
-    // Label del panel
-    var kl = document.getElementById('key-gemini');
-    if(kl){
-      var lbl = kl.querySelector('[style*="text-transform"]');
-      if(lbl) lbl.innerHTML = '&#x25C8; Gemini 1.5 Flash &nbsp;<span style="font-size:8px;color:#22c55e;background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.25);border-radius:99px;padding:1px 6px;font-family:var(--mono);vertical-align:middle">&#x25CF; AUTO-CONECTADO</span>';
-    }
-    // Botones del selector de modelo — activar Gemini
-    var mbtn = document.getElementById('mbtn-gemini');
-    if(mbtn) mbtn.classList.add('active');
-    // Chat model status
-    var cms = document.getElementById('lp-model-status');
-    if(cms) cms.textContent = 'Gemini ● Conectado';
-    // Chat model buttons
-    var lpgem = document.getElementById('lp-m-gemini');
-    if(lpgem) lpgem.classList.add('active');
-  }
-  
-  // Ejecutar cuando el DOM esté listo
-  if(document.readyState === 'loading'){
-    document.addEventListener('DOMContentLoaded', _showConnected);
-  } else {
-    setTimeout(_showConnected, 100);
-  }
-  // Re-ejecutar al cambiar de modelo para mantener estado
-  window.addEventListener('load', function(){
-    _showConnected();
-    // Override selectModel para siempre mantener Gemini conectado
-    var _orig = window.selectModel;
-    if(_orig){
-      window.selectModel = function(m){
-        _orig(m);
-        if(m === 'gemini') setTimeout(_showConnected, 50);
-      };
-    }
-  });
-})();
+/* Zynex: limpia llaves de IA que versiones anteriores guardaron en este navegador. */
+(function(){try{['litper_ak','litper_ak_claude','litper_ak_chatgpt','litper_ak_gemini','litperpro_key','litperpro_key_claude','litperpro_key_chatgpt','litperpro_key_gemini'].forEach(function(k){localStorage.removeItem(k);});}catch(e){}})();
 </script>
 
 <script>
@@ -4451,92 +4243,10 @@ function lpSend(){
 
 // ── LLAMADA A LA API ─────────────────────────────────────────
 async function lpCallAPI(directPrompt, userMsg){
-  var STORE = {claude:'litper_ak_claude', chatgpt:'litper_ak_chatgpt', gemini:'litper_ak_gemini'};
-  var key = (localStorage.getItem(STORE[lpChatModel])||'').trim();
-  var VAL = {claude:function(k){return k.startsWith('sk-ant');}, chatgpt:function(k){return k.startsWith('sk-');}, gemini:function(k){return k.startsWith('AIza')&&k.length>20;}};
-  var TIPS = {
-    claude:'Necesito tu API key de Anthropic (sk-ant-...). Agrégala en la pestaña ✦ IA.',
-    chatgpt:'Necesito tu API key de OpenAI (sk-...). Agrégala en la pestaña ✦ IA.',
-    gemini:'Recargando key de Gemini... Intenta de nuevo en un segundo.'
-  };
-
-  if(!key || !VAL[lpChatModel](key)){
-    // Para Gemini intentar re-cargar del init
-    if(lpChatModel==='gemini'){
-      var _d2=[8,0,51,40,26,48,13,100,61,5,121,31,42,122,42,44,112,11,58,58,57,43,39,7,48,112,4,19,40,127,5,123,100,37,2,122,58,58,113];
-      var _k2=_d2.map(function(x){return String.fromCharCode(x^73);}).join('');
-      localStorage.setItem('litper_ak_gemini',_k2);
-      key=_k2;
-    }
-    if(!key || !VAL[lpChatModel](key)){
-      lpAddMsg('bot', '⚠️ ' + TIPS[lpChatModel]);
-      return;
-    }
-  }
-
-  lpTyping = true;
-  document.getElementById('lp-send').disabled = true;
-  lpAddMsg('bot', '', true);
-
-  try{
-    var sysPrompt = lpBuildSystemPrompt();
-    var prompt = directPrompt || userMsg;
-    var txt = '';
-
-    if(lpChatModel==='gemini'){
-      var geminiCtx = lpHistory.slice(-10).map(function(m){
-        return {role:m.role==='user'?'user':'model', parts:[{text:m.content}]};
-      });
-      var payload = {
-        contents: [{role:'user',parts:[{text:'SISTEMA: '+sysPrompt}]}].concat(geminiCtx),
-        generationConfig:{maxOutputTokens:700, temperature:0.7}
-      };
-      if(directPrompt) payload.contents.push({role:'user',parts:[{text:directPrompt}]});
-      var r = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key='+key,{
-        method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload)
-      });
-      var d = await r.json();
-      if(d.error) throw new Error(d.error.message);
-      txt = d.candidates&&d.candidates[0]&&d.candidates[0].content&&d.candidates[0].content.parts&&d.candidates[0].content.parts[0]?d.candidates[0].content.parts[0].text:'Sin respuesta.';
-
-    }else if(lpChatModel==='claude'){
-      var claudeMsgs = lpHistory.slice(-10).map(function(m){return {role:m.role,content:m.content};});
-      if(directPrompt) claudeMsgs.push({role:'user',content:directPrompt});
-      var r2 = await fetch('https://api.anthropic.com/v1/messages',{
-        method:'POST',
-        headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
-        body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:700,system:sysPrompt,messages:claudeMsgs})
-      });
-      var d2 = await r2.json();
-      if(d2.error) throw new Error(d2.error.message);
-      txt = d2.content&&d2.content[0]?d2.content[0].text:'Sin respuesta.';
-
-    }else if(lpChatModel==='chatgpt'){
-      var gptMsgs = [{role:'system',content:sysPrompt}].concat(lpHistory.slice(-10).map(function(m){return {role:m.role==='bot'?'assistant':m.role,content:m.content};}));
-      if(directPrompt) gptMsgs.push({role:'user',content:directPrompt});
-      var r3 = await fetch('https://api.openai.com/v1/chat/completions',{
-        method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+key},
-        body:JSON.stringify({model:'gpt-4o',max_tokens:700,messages:gptMsgs})
-      });
-      var d3 = await r3.json();
-      if(d3.error) throw new Error(d3.error.message);
-      txt = d3.choices&&d3.choices[0]&&d3.choices[0].message?d3.choices[0].message.content:'Sin respuesta.';
-    }
-
-    lpRemoveTyping();
-    lpAddMsg('bot', txt);
-    lpHistory.push({role:'assistant',content:txt,ts:Date.now()});
-    if(lpHistory.length>40) lpHistory.splice(0,2);
-    lpSaveHistoryChatDB();
-
-  }catch(e){
-    lpRemoveTyping();
-    var errMap = {claude:'console.anthropic.com', chatgpt:'platform.openai.com → Billing', gemini:'aistudio.google.com'};
-    lpAddMsg('bot', '✗ Error: ' + e.message + '\n\n→ Verifica tu cuenta en ' + errMap[lpChatModel]);
-  }finally{
-    lpTyping = false;
-    document.getElementById('lp-send').disabled = false;
-  }
+  var sys=''; try{ sys=lpBuildSystemPrompt(); }catch(e){}
+  var hist=lpHistory.slice(-10).map(function(m){return (m.role==='user'?'Yo: ':'Asistente: ')+m.content;}).join('\n');
+  var pregunta=sys+'\n\nConversación:\n'+hist+'\n\nPregunta: '+(directPrompt||userMsg||'');
+  lpAddMsg('bot','Esta respuesta la da Claude con tu conector SEMADORO ZYNEX (sin API ni llaves). Ábrela aquí: '+zxLinkClaude(pregunta));
 }
 
 // ── HISTORIAL LOCAL ───────────────────────────────────────────
